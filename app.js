@@ -1,162 +1,165 @@
-/**
- * 微積分問題の生成と検証を行うクラス
- */
-class CalculusProblems {
-    constructor() {
-        this.currentProblem = null;
-        this.currentAnswer = null;
-        this.difficultyLevel = 1; // 1: 簡単, 2: 普通, 3: 難しい
-    }
+// アプリケーションのメインロジック
+document.addEventListener('DOMContentLoaded', () => {
+    // 要素の取得
+    const currentTimeElement = document.getElementById('current-time');
+    const alarmTimeInput = document.getElementById('alarm-time');
+    const setAlarmButton = document.getElementById('set-alarm');
+    const alarmStatusElement = document.getElementById('alarm-status');
+    const problemContainer = document.getElementById('problem-container');
+    const calculusProblemElement = document.getElementById('calculus-problem');
+    const answerInput = document.getElementById('answer-input');
+    const checkAnswerButton = document.getElementById('check-answer');
+    const feedbackElement = document.getElementById('feedback');
 
-    /**
-     * 問題の難易度を設定
-     * @param {number} level - 難易度レベル (1-3)
-     */
-    setDifficulty(level) {
-        if (level >= 1 && level <= 3) {
-            this.difficultyLevel = level;
+    // インスタンスの作成
+    const alarmController = new AlarmController();
+    const calculusProblems = new CalculusProblems();
+    
+    // 問題管理のための状態
+    let currentProblemId = '';
+
+    // 現在時刻の表示を更新
+    function updateClock() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        
+        currentTimeElement.textContent = `${hours}:${minutes}:${seconds}`;
+        
+        // アラームのチェック
+        if (alarmController.checkAlarm(now)) {
+            triggerAlarm();
         }
     }
 
-    /**
-     * ランダムな微積分問題を生成
-     * @returns {string} 問題文
-     */
-    generateProblem() {
-        const problemTypes = [
-            this.generateDerivativeProblem,
-            this.generateIntegralProblem,
-            this.generateLimitProblem
-        ];
+    // アラームをトリガー
+    function triggerAlarm() {
+        alarmController.startAlarm();
+        setAlarmButton.disabled = true;
+        alarmStatusElement.textContent = 'アラーム作動中！問題を解いて止めてください。';
         
-        // ランダムに問題タイプを選択
-        const randomType = Math.floor(Math.random() * problemTypes.length);
-        return problemTypes[randomType].call(this);
+        // 問題生成と表示
+        showCalculusProblem();
     }
 
-    /**
-     * 微分問題の生成
-     * @returns {string} 問題文
-     */
-    generateDerivativeProblem() {
-        let problem, answer;
+    // 微積分問題を表示
+    function showCalculusProblem() {
+        // 前回と同じ問題IDがあるか確認
+        const todayKey = alarmController.getTodayKey();
+        const savedProblem = localStorage.getItem(`problem_${todayKey}`);
         
-        switch(this.difficultyLevel) {
-            case 1: // 簡単
-                const a = this.getRandomInt(1, 10);
-                const b = this.getRandomInt(1, 5);
-                problem = `f(x) = ${a}x^${b} の導関数 f'(x) を求めよ。`;
-                answer = `${a * b}x^${b - 1}`;
-                break;
-                
-            case 2: // 普通
-                const c = this.getRandomInt(1, 5);
-                const d = this.getRandomInt(1, 5);
-                const e = this.getRandomInt(1, 10);
-                problem = `f(x) = ${c}x^${d} + ${e}sin(x) の導関数 f'(x) を求めよ。`;
-                answer = `${c * d}x^${d - 1} + ${e}cos(x)`;
-                break;
-                
-            case 3: // 難しい
-                const p = this.getRandomInt(2, 5);
-                const q = this.getRandomInt(2, 5);
-                problem = `f(x) = x^${p} * ln(x^${q}) の導関数 f'(x) を求めよ。`;
-                answer = `${p}x^${p-1}*ln(x^${q}) + ${q}x^${p-1}`;
-                break;
+        let problem;
+        if (savedProblem) {
+            // 前回の問題を復元
+            const problemData = JSON.parse(savedProblem);
+            calculusProblems.currentProblem = problemData.problem;
+            calculusProblems.currentAnswer = problemData.answer;
+            problem = problemData.problem;
+            currentProblemId = problemData.id || Date.now().toString();
+        } else {
+            // 新しい問題を生成
+            problem = calculusProblems.generateProblem();
+            currentProblemId = Date.now().toString();
+            
+            // 問題を保存
+            localStorage.setItem(`problem_${todayKey}`, JSON.stringify({
+                id: currentProblemId,
+                problem: calculusProblems.currentProblem,
+                answer: calculusProblems.currentAnswer,
+                solved: false
+            }));
         }
         
-        this.currentProblem = problem;
-        this.currentAnswer = answer;
-        return problem;
+        calculusProblemElement.textContent = problem;
+        problemContainer.classList.remove('hidden');
+        answerInput.value = '';
+        feedbackElement.textContent = '';
+        feedbackElement.className = '';
     }
 
-    /**
-     * 積分問題の生成
-     * @returns {string} 問題文
-     */
-    generateIntegralProblem() {
-        let problem, answer;
-        
-        switch(this.difficultyLevel) {
-            case 1: // 簡単
-                const a = this.getRandomInt(1, 5);
-                const n = this.getRandomInt(2, 4);
-                problem = `∫ ${a}x^${n} dx を求めよ。`;
-                answer = `${a}x^${n+1}/${n+1} + C`;
-                break;
-                
-            case 2: // 普通
-                const b = this.getRandomInt(1, 5);
-                problem = `∫ ${b}sin(x) dx を求めよ。`;
-                answer = `-${b}cos(x) + C`;
-                break;
-                
-            case 3: // 難しい
-                const c = this.getRandomInt(2, 5);
-                problem = `∫ 1/x^${c} dx を求めよ。`;
-                answer = `-1/${c-1}x^${c-1} + C`;
-                break;
+    // アラームのセットアップ
+    setAlarmButton.addEventListener('click', () => {
+        const selectedTime = alarmTimeInput.value;
+        if (!selectedTime) {
+            alert('時間を選択してください');
+            return;
         }
         
-        this.currentProblem = problem;
-        this.currentAnswer = answer;
-        return problem;
-    }
+        alarmController.setAlarm(selectedTime);
+        alarmStatusElement.textContent = `アラーム設定時刻: ${selectedTime}`;
+        setAlarmButton.disabled = false;
+    });
 
-    /**
-     * 極限問題の生成
-     * @returns {string} 問題文
-     */
-    generateLimitProblem() {
-        let problem, answer;
-        
-        switch(this.difficultyLevel) {
-            case 1: // 簡単
-                const a = this.getRandomInt(1, 5);
-                problem = `lim(x→∞) (${a} + 1/x) を求めよ。`;
-                answer = `${a}`;
-                break;
-                
-            case 2: // 普通
-                const b = this.getRandomInt(1, 5);
-                const c = this.getRandomInt(1, 5);
-                problem = `lim(x→∞) (${b}x^2 + ${c}x)/${b}x^2 を求めよ。`;
-                answer = `1`;
-                break;
-                
-            case 3: // 難しい
-                problem = `lim(x→0) (sin(x)/x) を求めよ。`;
-                answer = `1`;
-                break;
+    // 回答チェック
+    checkAnswerButton.addEventListener('click', () => {
+        const userAnswer = answerInput.value.trim();
+        if (!userAnswer) {
+            alert('回答を入力してください');
+            return;
         }
         
-        this.currentProblem = problem;
-        this.currentAnswer = answer;
-        return problem;
+        if (calculusProblems.checkAnswer(userAnswer)) {
+            feedbackElement.textContent = '正解です！アラームを停止します。';
+            feedbackElement.className = 'correct';
+            
+            // 問題を解決済みとしてマーク
+            const todayKey = alarmController.getTodayKey();
+            const savedProblem = localStorage.getItem(`problem_${todayKey}`);
+            if (savedProblem) {
+                const problemData = JSON.parse(savedProblem);
+                problemData.solved = true;
+                localStorage.setItem(`problem_${todayKey}`, JSON.stringify(problemData));
+            }
+            
+            // アラームを停止
+            setTimeout(() => {
+                alarmController.stopAlarm(true); // 解決済みとしてアラームを停止
+                problemContainer.classList.add('hidden');
+                setAlarmButton.disabled = false;
+                alarmStatusElement.textContent = 'アラームは設定されていません';
+            }, 2000);
+        } else {
+            feedbackElement.textContent = '不正解です。もう一度試してください。';
+            feedbackElement.className = 'incorrect';
+            // 回答が間違っている回数を記録することもできます（オプション）
+        }
+    });
+
+    // キーボードでエンターキーを押したときの処理
+    answerInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            checkAnswerButton.click();
+        }
+    });
+    
+    // アプリ開始時に状態をチェック
+    function initApp() {
+        // アラームがアクティブだった場合、アラームを再開
+        if (alarmController.isActive()) {
+            triggerAlarm();
+        } else {
+            // アラームタイムが設定されていれば表示
+            if (alarmController.alarmTime) {
+                alarmStatusElement.textContent = `アラーム設定時刻: ${alarmController.alarmTime}`;
+            }
+            
+            // 今日の問題が解決されていない場合は表示
+            const todayKey = alarmController.getTodayKey();
+            const savedProblem = localStorage.getItem(`problem_${todayKey}`);
+            if (savedProblem) {
+                const problemData = JSON.parse(savedProblem);
+                if (!problemData.solved && alarmController.isAlarmSet) {
+                    showCalculusProblem();
+                }
+            }
+        }
     }
 
-    /**
-     * 回答が正しいか検証
-     * @param {string} userAnswer - ユーザーの回答
-     * @returns {boolean} 正解かどうか
-     */
-    checkAnswer(userAnswer) {
-        if (!this.currentAnswer) return false;
-        
-        // 空白とケースを無視して比較（非常に単純な比較）
-        const normalizedUserAnswer = userAnswer.trim().toLowerCase().replace(/\s+/g, '');
-        const normalizedCorrectAnswer = this.currentAnswer.trim().toLowerCase().replace(/\s+/g, '');
-        
-        return normalizedUserAnswer === normalizedCorrectAnswer;
-    }
-
-    /**
-     * 指定された範囲のランダムな整数を取得
-     * @param {number} min - 最小値
-     * @param {number} max - 最大値
-     * @returns {number} ランダムな整数
-     */
-    getRandomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-}
+    // 時計を開始
+    setInterval(updateClock, 1000);
+    updateClock(); // 初期表示
+    
+    // アプリの初期化
+    initApp();
+});
