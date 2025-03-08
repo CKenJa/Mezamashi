@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentTimeElement = document.getElementById('current-time');
     const alarmTimeInput = document.getElementById('alarm-time');
     const setAlarmButton = document.getElementById('set-alarm');
-    const stopAlarmButton = document.getElementById('stop-alarm');
     const alarmStatusElement = document.getElementById('alarm-status');
     const problemContainer = document.getElementById('problem-container');
     const calculusProblemElement = document.getElementById('calculus-problem');
@@ -35,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function triggerAlarm() {
         alarmController.startAlarm();
         setAlarmButton.disabled = true;
-        stopAlarmButton.disabled = false;
         alarmStatusElement.textContent = 'アラーム作動中！問題を解いて止めてください。';
         
         // 問題生成と表示
@@ -63,16 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
         alarmController.setAlarm(selectedTime);
         alarmStatusElement.textContent = `アラーム設定時刻: ${selectedTime}`;
         setAlarmButton.disabled = false;
-        stopAlarmButton.disabled = false;
-    });
-
-    // アラームの停止
-    stopAlarmButton.addEventListener('click', () => {
-        alarmController.resetAlarm();
-        problemContainer.classList.add('hidden');
-        setAlarmButton.disabled = false;
-        stopAlarmButton.disabled = true;
-        alarmStatusElement.textContent = 'アラームは設定されていません';
     });
 
     // 回答チェック
@@ -92,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 alarmController.stopAlarm();
                 problemContainer.classList.add('hidden');
                 setAlarmButton.disabled = false;
-                stopAlarmButton.disabled = true;
                 alarmStatusElement.textContent = 'アラームは設定されていません';
             }, 2000);
         } else {
